@@ -2,53 +2,53 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Habit;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class HabitController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        //
+        $habits = Habit::where('user_id', auth()->id())->get();
+
+        return Inertia::render('habits/Index', [
+            'habits' => $habits,
+        ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
-        //
+        return Inertia::render('habits/Create');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'notes' => 'nullable|string',
+            'frequency' => 'required|string|max:255',
+            'difficulty' => 'required|string|max:255',
+            'current_streak' => 'nullable|integer',
+            'max_streak' => 'nullable|integer',
+            'last_completed_at' => 'nullable|date',
+        ]);
+
+        $habit = $request->user()->habits()->create($validated);
+
+        return redirect()->route('habits.index')->with('success', 'Habit created!');
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show($id)
     {
         //
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit($id)
     {
         //
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, $id)
     {
         //

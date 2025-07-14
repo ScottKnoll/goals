@@ -1,14 +1,16 @@
-<script setup>
+<script setup lang="ts">
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { computed } from 'vue'
-import SidebarMenuButtonChild from './SidebarMenuButtonChild.vue'
+import { type Component, computed } from 'vue'
+import SidebarMenuButtonChild, { type SidebarMenuButtonProps } from './SidebarMenuButtonChild.vue'
 import { useSidebar } from './utils'
 
 defineOptions({
     inheritAttrs: false,
 })
 
-const props = withDefaults(defineProps(), {
+const props = withDefaults(defineProps<SidebarMenuButtonProps & {
+    tooltip?: string | Component
+}>(), {
     as: 'button',
     variant: 'default',
     size: 'default',
