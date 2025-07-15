@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Habit;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class HabitController extends Controller
@@ -22,19 +21,19 @@ class HabitController extends Controller
         return Inertia::render('habits/Create');
     }
 
-    public function store(Request $request)
+    public function store()
     {
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'notes' => 'nullable|string',
-            'frequency' => 'required|string|max:255',
-            'difficulty' => 'required|string|max:255',
+        $validated = request()->validate([
+            'title' => 'required|max:255',
+            'notes' => 'nullable',
+            'frequency' => 'required|max:255',
+            'difficulty' => 'required|max:255',
             'current_streak' => 'nullable|integer',
             'max_streak' => 'nullable|integer',
             'last_completed_at' => 'nullable|date',
         ]);
 
-        $habit = $request->user()->habits()->create($validated);
+        $habit = auth()->user()->habits()->create($validated);
 
         return redirect()->route('habits.index')->with('success', 'Habit created!');
     }
@@ -49,7 +48,7 @@ class HabitController extends Controller
         //
     }
 
-    public function update(Request $request, $id)
+    public function update($id)
     {
         //
     }
