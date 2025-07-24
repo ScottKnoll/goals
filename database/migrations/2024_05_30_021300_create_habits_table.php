@@ -13,8 +13,8 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->string('title');
             $table->text('notes')->nullable();
-            $table->enum('frequency', ['daily', 'weekly', 'monthly'])->default('daily');
-            $table->enum('difficulty', ['trivial', 'easy', 'medium', 'hard'])->default('trivial');
+            $table->json('frequency');
+            $table->enum('difficulty', ['trivial', 'easy', 'medium', 'hard', 'extreme'])->default('trivial');
             $table->integer('current_streak')->default(0);
             $table->integer('max_streak')->default(0);
             $table->timestamp('last_completed_at')->nullable();

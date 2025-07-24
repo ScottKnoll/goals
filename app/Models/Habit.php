@@ -20,6 +20,7 @@ class Habit extends Model
 
     protected $casts = [
         'last_completed_at' => 'datetime',
+        'frequency' => 'array',
     ];
 
     public function completions()
@@ -61,7 +62,21 @@ class Habit extends Model
             'easy' => 2,
             'medium' => 3,
             'hard' => 4,
+            'extreme' => 5,
             default => 1,
         };
+    }
+
+    public function getFrequencyDisplayAttribute()
+    {
+        $frequency = $this->frequency;
+        $count = $frequency['count'] ?? 1;
+        $type = $frequency['type'] ?? 'daily';
+
+        if ($count === 1) {
+            return "1 time {$type}";
+        }
+
+        return "{$count} times {$type}";
     }
 }

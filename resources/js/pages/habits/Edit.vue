@@ -6,19 +6,35 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 
-const form = useForm({
-    title: '',
-    notes: '',
+interface Habit {
+    id: number
+    title: string
+    notes?: string
     frequency: {
-        type: '',
-        count: 1
+        type: string
+        count: number
+    }
+    difficulty: 'trivial' | 'easy' | 'medium' | 'hard' | 'extreme'
+    category?: string
+}
+
+const props = defineProps<{
+    habit: Habit
+}>()
+
+const form = useForm({
+    title: props.habit.title,
+    notes: props.habit.notes || '',
+    frequency: {
+        type: props.habit.frequency.type,
+        count: props.habit.frequency.count
     },
-    difficulty: '',
-    category: '',
+    difficulty: props.habit.difficulty,
+    category: props.habit.category || '',
 })
 
 const submit = () => {
-    form.post(route('habits.store'))
+    form.put(route('habits.update', props.habit.id))
 }
 
 defineOptions({
@@ -28,14 +44,14 @@ defineOptions({
 
 <template>
 
-    <Head title="Create Habit" />
+    <Head title="Edit Habit" />
 
     <div class="flex h-full flex-1 flex-col gap-4 rounded-xl p-4 overflow-x-auto">
         <div class="flex items-center justify-between">
             <div>
-                <h1 class="text-3xl font-bold tracking-tight">Create a New Habit</h1>
+                <h1 class="text-3xl font-bold tracking-tight">Edit Habit</h1>
                 <p class="text-muted-foreground">
-                    Add a new habit to track and build better routines.
+                    Update your habit details and settings.
                 </p>
             </div>
             <Button as-child variant="outline">
@@ -47,7 +63,7 @@ defineOptions({
             <CardHeader>
                 <CardTitle>Habit Details</CardTitle>
                 <CardDescription>
-                    Fill in the details for your new habit. You can always edit these later.
+                    Update the details for your habit. Changes will be saved immediately.
                 </CardDescription>
             </CardHeader>
             <CardContent>
@@ -124,7 +140,7 @@ defineOptions({
                             <Link :href="route('habits.index')">Cancel</Link>
                         </Button>
                         <Button type="submit" :disabled="form.processing">
-                            Create Habit
+                            Update Habit
                         </Button>
                     </div>
                 </form>
