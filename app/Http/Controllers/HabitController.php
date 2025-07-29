@@ -26,13 +26,13 @@ class HabitController extends Controller
     public function store()
     {
         $validated = request()->validate([
-            'title' => 'required|max:255',
-            'notes' => 'nullable',
+            'title' => 'required|string|max:255',
+            'notes' => 'nullable|string|max:1000',
             'frequency' => 'required|array',
             'frequency.type' => 'required|in:daily,weekly,monthly',
             'frequency.count' => 'required|integer|min:1|max:10',
             'difficulty' => 'required|in:trivial,easy,medium,hard,extreme',
-            'category' => 'nullable|max:255',
+            'category' => 'nullable|string|max:255',
         ]);
 
         $validated['user_id'] = auth()->id();
@@ -57,13 +57,13 @@ class HabitController extends Controller
     public function update(Habit $habit)
     {
         $validated = request()->validate([
-            'title' => 'required|max:255',
-            'notes' => 'nullable',
+            'title' => 'required|string|max:255',
+            'notes' => 'nullable|string|max:1000',
             'frequency' => 'required|array',
             'frequency.type' => 'required|in:daily,weekly,monthly',
             'frequency.count' => 'required|integer|min:1|max:10',
             'difficulty' => 'required|in:trivial,easy,medium,hard,extreme',
-            'category' => 'nullable|max:255',
+            'category' => 'nullable|string|max:255',
         ]);
 
         $habit->update($validated);

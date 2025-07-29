@@ -2,55 +2,77 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Models\Goal;
+use Inertia\Inertia;
 
 class GoalController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        //
+        $goals = Goal::where('user_id', auth()->id())
+            ->with(['milestones', 'habits', 'targetParameters'])
+            ->withCount(['milestones', 'habits', 'targetParameters'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return Inertia::render('goals/Index', [
+            'goals' => $goals,
+        ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
-        //
+        return Inertia::render('goals/Create');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function store()
     {
-        //
+        $validated = request()->validate([
+            'title' => 'required|string|max:255',
+            'category' => 'required|string|max:255',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        $validated['user_id'] = auth()->id();
+
+        Goal::create($validated);
+
+        return redirect()->route('goals.index')
+            ->with('success', 'Goal created successfully!');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show($id)
+    public function show(Goal $goal)
     {
-        //
+        $goal->load(['milestones', 'habits', 'targetParameters']);
+        $goal->loadCount(['milestones', 'habits', 'targetParameters']);
+
+        return Inertia::render('goals/Show', [
+            'goal' => $goal,
+        ]);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit($id)
+    public function edit(Goal $goal)
     {
-        //
+        return Inertia::render('goals/Edit', [
+            'goal' => $goal,
+        ]);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, $id)
+    public function update(Request $request, Goal $goal)
     {
-        //
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'category' => 'required|string|max:255',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        $goal->update($validated);
+
+        return redirect()->route('goals.index')
+            ->with('success', 'Goal updated successfully!');
     }
 }

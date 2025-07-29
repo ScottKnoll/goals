@@ -94,8 +94,17 @@ const columns: ColumnDef<Habit>[] = [
         header: 'Frequency',
         cell: ({ row }) => {
             const frequency = row.getValue('frequency') as { type: string; count: number }
-            const count = frequency.count
-            const type = frequency.type
+
+            let count, type
+            if (typeof frequency === 'string') {
+                const parsed = JSON.parse(frequency)
+                count = parsed.count
+                type = parsed.type
+            } else {
+                count = frequency.count
+                type = frequency.type
+            }
+
             const display = count === 1 ? `1 time ${type}` : `${count} times ${type}`
             return h('div', { class: 'text-sm text-muted-foreground' }, display)
         },
