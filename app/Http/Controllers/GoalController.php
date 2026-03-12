@@ -28,11 +28,11 @@ class GoalController extends Controller
     public function store()
     {
         $validated = request()->validate([
-            'title' => 'required|string|max:255',
-            'category' => 'required|string|max:255',
+            'title' => 'required|max:255',
+            'category' => 'required|max:255',
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
-            'notes' => 'nullable|string|max:1000',
+            'notes' => 'nullable|max:1000',
         ]);
 
         $validated['user_id'] = auth()->id();
@@ -60,19 +60,27 @@ class GoalController extends Controller
         ]);
     }
 
-    public function update(Request $request, Goal $goal)
+    public function update(Goal $goal)
     {
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'category' => 'required|string|max:255',
+        $validated = request()->validate([
+            'title' => 'required|max:255',
+            'category' => 'required|max:255',
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
-            'notes' => 'nullable|string|max:1000',
+            'notes' => 'nullable|max:1000',
         ]);
 
         $goal->update($validated);
 
         return redirect()->route('goals.index')
             ->with('success', 'Goal updated successfully!');
+    }
+
+    public function destroy(Goal $goal)
+    {
+        $goal->delete();
+
+        return redirect()->route('goals.index')
+            ->with('success', 'Goal deleted successfully!');
     }
 }

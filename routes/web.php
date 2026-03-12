@@ -18,7 +18,7 @@ Route::get('dashboard', function () {
 Route::middleware(['auth'])->group(function () {
     Route::resource('habits', HabitController::class)->except('destroy');
     Route::resource('tasks', TaskController::class);
-    Route::resource('goals', GoalController::class)->except('destroy');
+    Route::resource('goals', GoalController::class);
     Route::resource('goals.milestones', GoalMilestoneController::class)->except('index', 'show');
     Route::resource('milestones.tasks', TaskController::class)->except(['index', 'show']);
 });

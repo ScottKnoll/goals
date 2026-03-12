@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { type BreadcrumbItem } from '@/types'
-import { Link } from '@inertiajs/vue3'
+import { Head, Link, router } from '@inertiajs/vue3'
 import { valueUpdater } from '@/lib/utils'
 import type {
     ColumnDef,
@@ -106,7 +106,7 @@ const columns: ColumnDef<Goal>[] = [
             return h(Button, {
                 variant: 'ghost',
                 onClick: () => column.toggleSorting(column.getIsSorted() === 'asc'),
-            }, () => ['Title', h(ArrowUpDown, { class: 'ml-2 h-4 w-4' })])
+            }, () => ['Title', h(ArrowUpDown, { class: 'ml-2 size-4' })])
         },
         cell: ({ row }) => {
             const goal = row.original
@@ -132,7 +132,7 @@ const columns: ColumnDef<Goal>[] = [
             return h(Button, {
                 variant: 'ghost',
                 onClick: () => column.toggleSorting(column.getIsSorted() === 'asc'),
-            }, () => ['Status', h(ArrowUpDown, { class: 'ml-2 h-4 w-4' })])
+            }, () => ['Status', h(ArrowUpDown, { class: 'ml-2 size-4' })])
         },
         cell: ({ row }) => {
             const goal = row.original
@@ -149,7 +149,7 @@ const columns: ColumnDef<Goal>[] = [
             return h(Button, {
                 variant: 'ghost',
                 onClick: () => column.toggleSorting(column.getIsSorted() === 'asc'),
-            }, () => ['Priority', h(ArrowUpDown, { class: 'ml-2 h-4 w-4' })])
+            }, () => ['Priority', h(ArrowUpDown, { class: 'ml-2 size-4' })])
         },
         cell: ({ row }) => {
             const goal = row.original
@@ -188,9 +188,9 @@ const columns: ColumnDef<Goal>[] = [
 
             return h(DropdownMenu, {}, () => [
                 h(DropdownMenuTrigger, { asChild: true }, () => [
-                    h(Button, { variant: 'ghost', class: 'h-8 w-8 p-0' }, () => [
+                    h(Button, { variant: 'ghost', class: 'size-8 p-0' }, () => [
                         h('span', { class: 'sr-only' }, 'Open menu'),
-                        h(MoreHorizontal, { class: 'h-4 w-4' }),
+                        h(MoreHorizontal, { class: 'size-4' }),
                     ]),
                 ]),
                 h(DropdownMenuContent, { align: 'end' }, () => [
@@ -200,14 +200,14 @@ const columns: ColumnDef<Goal>[] = [
                             window.location.href = `/goals/${goal.id}/edit`
                         },
                     }, () => [
-                        h(Edit, { class: 'mr-2 h-4 w-4' }),
+                        h(Edit, { class: 'mr-2 size-4' }),
                         'Edit',
                     ]),
                     h(DropdownMenuSeparator),
                     h(DropdownMenuItem, {
-                        onClick: () => {
+                        onSelect: () => {
                             if (confirm('Are you sure you want to delete this goal?')) {
-                                console.log('Delete goal:', goal.id)
+                                router.delete(route('goals.destroy', goal.id))
                             }
                         },
                         class: 'text-red-600',
@@ -254,7 +254,7 @@ const table = useVueTable({
                 </div>
                 <Button as-child>
                     <Link :href="route('goals.create')">
-                    <Plus class="mr-2 h-4 w-4" />
+                    <Plus class="mr-2 size-4" />
                     Add Goal
                     </Link>
                 </Button>
@@ -262,19 +262,19 @@ const table = useVueTable({
 
             <div class="flex items-center space-x-2">
                 <div class="relative flex-1 max-w-sm">
-                    <Search class="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Search class="absolute left-2 top-2.5 size-4 text-muted-foreground" />
                     <Input v-model="searchQuery" placeholder="Filter goals..." class="pl-8" />
                 </div>
                 <Button variant="outline" size="sm">
-                    <Filter class="mr-2 h-4 w-4" />
+                    <Filter class="mr-2 size-4" />
                     Status
                 </Button>
                 <Button variant="outline" size="sm">
-                    <Filter class="mr-2 h-4 w-4" />
+                    <Filter class="mr-2 size-4" />
                     Priority
                 </Button>
                 <Button variant="outline" size="sm">
-                    <Filter class="mr-2 h-4 w-4" />
+                    <Filter class="mr-2 size-4" />
                     View
                 </Button>
             </div>
