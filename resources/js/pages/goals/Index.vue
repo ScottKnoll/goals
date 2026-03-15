@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { type BreadcrumbItem } from '@/types'
-import { Head, Link, router } from '@inertiajs/vue3'
+import { Head, Link } from '@inertiajs/vue3'
 import { valueUpdater } from '@/lib/utils'
 import type {
     ColumnDef,
@@ -23,8 +23,23 @@ import {
     getSortedRowModel,
     useVueTable,
 } from '@tanstack/vue-table'
-import { ArrowUpDown, MoreHorizontal, Edit, Trash2, Plus, Search, Filter } from 'lucide-vue-next'
-import { h, ref } from 'vue'
+import {
+    ArrowUpDown,
+    ArrowUp,
+    ArrowRight,
+    ArrowDown,
+    MoreHorizontal,
+    Edit,
+    Trash2,
+    Plus,
+    Search,
+    Filter,
+    CheckCircle,
+    Clock,
+    Target,
+    AlertCircle,
+} from 'lucide-vue-next'
+import { h, ref, computed } from 'vue'
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -55,6 +70,46 @@ const props = defineProps<{
     goals: Goal[]
 }>()
 
+const getCsrfToken = () =>
+    document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? ''
+
+const localGoals = ref<Goal[]>([...props.goals])
+
+const tableData = computed(() =>
+    localGoals.value.filter(
+        goal =>
+            goal.title.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+            goal.category.toLowerCase().includes(searchQuery.value.toLowerCase())
+    )
+)
+
+async function deleteGoal(goal: Goal) {
+    if (!confirm('Are you sure you want to delete this goal?')) return
+    const id = goal.id
+    const previous = [...localGoals.value]
+    localGoals.value = localGoals.value.filter(g => g.id !== id)
+    try {
+        const res = await fetch(route('goals.destroy', id), {
+            method: 'delete',
+            redirect: 'manual',
+            headers: {
+                Accept: 'application/json',
+                'X-CSRF-TOKEN': getCsrfToken(),
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            credentials: 'same-origin',
+        })
+        const isRedirect = res.type === 'opaqueredirect' || (res.status >= 300 && res.status < 400)
+        if (!isRedirect && !res.ok) {
+            const data = await res.json().catch(() => ({}))
+            throw new Error((data as { message?: string }).message || 'Failed to delete goal')
+        }
+    } catch (err) {
+        localGoals.value = previous
+        alert(err instanceof Error ? err.message : 'Failed to delete goal')
+    }
+}
+
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Goals',
@@ -74,10 +129,10 @@ const getStatus = (goal: Goal) => {
 
 const getStatusDisplay = (status: string) => {
     const statusConfig = {
-        completed: { text: 'Completed', class: 'bg-green-100 text-green-800', icon: '✓' },
-        'in-progress': { text: 'In Progress', class: 'bg-blue-100 text-blue-800', icon: '⏳' },
-        planned: { text: 'Planned', class: 'bg-gray-100 text-gray-800', icon: '📋' },
-        overdue: { text: 'Overdue', class: 'bg-red-100 text-red-800', icon: '⚠' },
+        completed: { text: 'Completed', class: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400', icon: CheckCircle },
+        'in-progress': { text: 'In Progress', class: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400', icon: Clock },
+        planned: { text: 'Planned', class: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300', icon: Target },
+        overdue: { text: 'Overdue', class: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400', icon: AlertCircle },
     }
     return statusConfig[status as keyof typeof statusConfig] || statusConfig.planned
 }
@@ -92,9 +147,9 @@ const getPriority = (goal: Goal) => {
 
 const getPriorityDisplay = (priority: string) => {
     const priorityConfig = {
-        high: { text: 'High', class: 'bg-red-100 text-red-800', icon: '↑' },
-        medium: { text: 'Medium', class: 'bg-yellow-100 text-yellow-800', icon: '→' },
-        low: { text: 'Low', class: 'bg-green-100 text-green-800', icon: '↓' },
+        high: { text: 'High', class: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400', icon: ArrowUp },
+        medium: { text: 'Medium', class: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400', icon: ArrowRight },
+        low: { text: 'Low', class: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400', icon: ArrowDown },
     }
     return priorityConfig[priority as keyof typeof priorityConfig] || priorityConfig.medium
 }
@@ -121,9 +176,12 @@ const columns: ColumnDef<Goal>[] = [
         header: 'Category',
         cell: ({ row }) => {
             const category = row.getValue('category') as string
-            return h('span', {
-                class: 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800',
+            const pill = h('span', {
+                class: 'inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300',
             }, category.charAt(0).toUpperCase() + category.slice(1))
+            return h('div', { class: 'table h-full w-full' }, [
+                h('div', { class: 'table-cell align-middle text-center' }, [pill]),
+            ])
         },
     },
     {
@@ -138,9 +196,16 @@ const columns: ColumnDef<Goal>[] = [
             const goal = row.original
             const status = getStatus(goal)
             const statusDisplay = getStatusDisplay(status)
-            return h('span', {
-                class: `inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusDisplay.class}`,
-            }, () => [statusDisplay.icon + ' ' + statusDisplay.text])
+            const StatusIcon = statusDisplay.icon
+            const pill = h('span', {
+                class: `inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${statusDisplay.class}`,
+            }, [
+                h(StatusIcon, { class: 'size-3.5 shrink-0' }),
+                h('span', {}, statusDisplay.text),
+            ])
+            return h('div', { class: 'table h-full w-full' }, [
+                h('div', { class: 'table-cell align-middle text-center' }, [pill]),
+            ])
         },
     },
     {
@@ -155,9 +220,16 @@ const columns: ColumnDef<Goal>[] = [
             const goal = row.original
             const priority = getPriority(goal)
             const priorityDisplay = getPriorityDisplay(priority)
-            return h('span', {
-                class: `inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${priorityDisplay.class}`,
-            }, () => [priorityDisplay.icon + ' ' + priorityDisplay.text])
+            const PriorityIcon = priorityDisplay.icon
+            const pill = h('span', {
+                class: `inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${priorityDisplay.class}`,
+            }, [
+                h(PriorityIcon, { class: 'size-3.5 shrink-0' }),
+                h('span', {}, priorityDisplay.text),
+            ])
+            return h('div', { class: 'table h-full w-full' }, [
+                h('div', { class: 'table-cell align-middle text-center' }, [pill]),
+            ])
         },
     },
     {
@@ -169,7 +241,7 @@ const columns: ColumnDef<Goal>[] = [
             const completedMilestones = goal.milestones?.filter((m: any) => m.completed_at)?.length || 0
             const progress = milestonesCount > 0 ? Math.round((completedMilestones / milestonesCount) * 100) : 0
 
-            return h('div', { class: 'flex items-center space-x-2' }, [
+            const content = h('div', { class: 'flex items-center space-x-2' }, [
                 h('div', { class: 'w-full bg-gray-200 rounded-full h-2' }, [
                     h('div', {
                         class: 'bg-blue-600 h-2 rounded-full',
@@ -177,6 +249,9 @@ const columns: ColumnDef<Goal>[] = [
                     })
                 ]),
                 h('span', { class: 'text-sm text-gray-600 min-w-[3rem]' }, `${progress}%`)
+            ])
+            return h('div', { class: 'table h-full w-full' }, [
+                h('div', { class: 'table-cell align-middle' }, [content]),
             ])
         },
     },
@@ -205,11 +280,7 @@ const columns: ColumnDef<Goal>[] = [
                     ]),
                     h(DropdownMenuSeparator),
                     h(DropdownMenuItem, {
-                        onSelect: () => {
-                            if (confirm('Are you sure you want to delete this goal?')) {
-                                router.delete(route('goals.destroy', goal.id))
-                            }
-                        },
+                        onSelect: () => void deleteGoal(goal),
                         class: 'text-red-600',
                     }, () => [
                         h(Trash2, { class: 'mr-2 h-4 w-4' }),
@@ -223,10 +294,7 @@ const columns: ColumnDef<Goal>[] = [
 
 const table = useVueTable({
     get data() {
-        return props.goals.filter(goal =>
-            goal.title.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-            goal.category.toLowerCase().includes(searchQuery.value.toLowerCase())
-        )
+        return tableData.value
     },
     columns,
     getCoreRowModel: getCoreRowModel(),
@@ -280,7 +348,7 @@ const table = useVueTable({
             </div>
 
             <div class="rounded-md border">
-                <Table>
+                <Table class="[&_tbody_td]:h-14">
                     <TableHeader>
                         <TableRow v-for="headerGroup in table.getHeaderGroups()" :key="headerGroup.id">
                             <TableHead v-for="header in headerGroup.headers" :key="header.id">

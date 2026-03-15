@@ -11,12 +11,12 @@ class Milestone extends Model
         'title',
         'notes',
         'target_date',
-        'is_completed',
+        'completed_at',
     ];
 
     protected $casts = [
         'target_date' => 'datetime',
-        'is_completed' => 'boolean',
+        'completed_at' => 'datetime',
     ];
 
     public function goal()

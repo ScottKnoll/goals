@@ -1,10 +1,16 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue'
-import { Head, Link } from '@inertiajs/vue3'
+import { Head, Link, router } from '@inertiajs/vue3'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { type BreadcrumbItem } from '@/types'
-import { Edit, Calendar, Target, CheckCircle, Clock } from 'lucide-vue-next'
+import { Edit, Calendar, Target, CheckCircle, Clock, Plus, MoreHorizontal } from 'lucide-vue-next'
 
 interface Goal {
     id: number
@@ -58,6 +64,14 @@ const getProgress = () => {
     const milestonesCount = props.goal.milestones_count || 0
     const completedMilestones = props.goal.milestones?.filter((m: any) => m.completed_at)?.length || 0
     return milestonesCount > 0 ? Math.round((completedMilestones / milestonesCount) * 100) : 0
+}
+
+function toggleMilestoneComplete(milestone: { id: number; completed_at?: string }) {
+    router.put(
+        route('goals.milestones.update', [props.goal.id, milestone.id]),
+        { completed: !milestone.completed_at },
+        { preserveScroll: true }
+    )
 }
 </script>
 
@@ -122,20 +136,62 @@ const getProgress = () => {
                     </Card>
 
                     <Card>
-                        <CardHeader>
-                            <CardTitle>Milestones</CardTitle>
-                            <CardDescription>
-                                Track your progress with milestones
-                            </CardDescription>
+                        <CardHeader class="flex flex-row items-start justify-between space-y-0 gap-4">
+                            <div class="space-y-1.5">
+                                <CardTitle>Milestones</CardTitle>
+                                <CardDescription>
+                                    Track your progress with milestones
+                                </CardDescription>
+                            </div>
+                            <Button as-child size="sm">
+                                <Link :href="route('goals.milestones.create', goal.id)">
+                                    <Plus class="mr-2 h-4 w-4" />
+                                    Add
+                                </Link>
+                            </Button>
                         </CardHeader>
                         <CardContent>
                             <div v-if="goal.milestones && goal.milestones.length > 0" class="space-y-2">
-                                <div v-for="milestone in goal.milestones" :key="milestone.id"
-                                    class="flex items-center justify-between p-3 border rounded-lg">
-                                    <span class="font-medium">{{ milestone.title }}</span>
-                                    <span v-if="milestone.completed_at" class="text-green-600 text-sm">
-                                        Completed
-                                    </span>
+                                <div
+                                    v-for="milestone in goal.milestones"
+                                    :key="milestone.id"
+                                    class="flex items-center justify-between gap-2 p-3 border rounded-lg"
+                                >
+                                    <div class="flex min-w-0 flex-1 items-center gap-2">
+                                        <span class="font-medium truncate">{{ milestone.title }}</span>
+                                        <span
+                                            v-if="milestone.completed_at"
+                                            class="shrink-0 text-green-600 text-sm"
+                                        >
+                                            Completed
+                                        </span>
+                                    </div>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger as-child>
+                                            <Button variant="ghost" size="icon" class="size-8 shrink-0">
+                                                <MoreHorizontal class="size-4" />
+                                                <span class="sr-only">Open menu</span>
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuItem as-child>
+                                                <Link
+                                                    :href="route('goals.milestones.edit', [goal.id, milestone.id])"
+                                                    class="flex cursor-pointer items-center"
+                                                >
+                                                    <Edit class="mr-2 h-4 w-4" />
+                                                    Edit
+                                                </Link>
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                class="cursor-pointer"
+                                                @select="toggleMilestoneComplete(milestone)"
+                                            >
+                                                <CheckCircle class="mr-2 h-4 w-4" />
+                                                {{ milestone.completed_at ? 'Mark incomplete' : 'Mark complete' }}
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
                                 </div>
                             </div>
                             <div v-else class="text-center py-4 text-muted-foreground">
