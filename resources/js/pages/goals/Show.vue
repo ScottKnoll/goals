@@ -45,6 +45,9 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 const getStatus = (goal: Goal) => {
     if (goal.completed_at) return 'completed'
+    const total = goal.milestones_count ?? goal.milestones?.length ?? 0
+    const completed = goal.milestones?.filter((m: any) => m.completed_at)?.length ?? 0
+    if (total > 0 && completed === total) return 'completed'
     if (goal.end_date && new Date(goal.end_date) < new Date()) return 'overdue'
     if (goal.start_date && new Date(goal.start_date) <= new Date()) return 'in-progress'
     return 'planned'
@@ -91,8 +94,8 @@ function toggleMilestoneComplete(milestone: { id: number; completed_at?: string 
                 <div class="flex space-x-2">
                     <Button as-child variant="outline">
                         <Link :href="route('goals.edit', goal.id)">
-                        <Edit class="mr-2 h-4 w-4" />
-                        Edit Goal
+                            <Edit class="mr-2 size-4" />
+                            Edit Goal
                         </Link>
                     </Button>
                     <Button as-child>
@@ -145,24 +148,18 @@ function toggleMilestoneComplete(milestone: { id: number; completed_at?: string 
                             </div>
                             <Button as-child size="sm">
                                 <Link :href="route('goals.milestones.create', goal.id)">
-                                    <Plus class="mr-2 h-4 w-4" />
+                                    <Plus class="mr-2 size-4" />
                                     Add
                                 </Link>
                             </Button>
                         </CardHeader>
                         <CardContent>
                             <div v-if="goal.milestones && goal.milestones.length > 0" class="space-y-2">
-                                <div
-                                    v-for="milestone in goal.milestones"
-                                    :key="milestone.id"
-                                    class="flex items-center justify-between gap-2 p-3 border rounded-lg"
-                                >
+                                <div v-for="milestone in goal.milestones" :key="milestone.id"
+                                    class="flex items-center justify-between gap-2 p-3 border rounded-lg">
                                     <div class="flex min-w-0 flex-1 items-center gap-2">
                                         <span class="font-medium truncate">{{ milestone.title }}</span>
-                                        <span
-                                            v-if="milestone.completed_at"
-                                            class="shrink-0 text-green-600 text-sm"
-                                        >
+                                        <span v-if="milestone.completed_at" class="shrink-0 text-green-600 text-sm">
                                             Completed
                                         </span>
                                     </div>
@@ -175,19 +172,15 @@ function toggleMilestoneComplete(milestone: { id: number; completed_at?: string 
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
                                             <DropdownMenuItem as-child>
-                                                <Link
-                                                    :href="route('goals.milestones.edit', [goal.id, milestone.id])"
-                                                    class="flex cursor-pointer items-center"
-                                                >
-                                                    <Edit class="mr-2 h-4 w-4" />
+                                                <Link :href="route('goals.milestones.edit', [goal.id, milestone.id])"
+                                                    class="flex cursor-pointer items-center">
+                                                    <Edit class="mr-2 size-4" />
                                                     Edit
                                                 </Link>
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem
-                                                class="cursor-pointer"
-                                                @select="toggleMilestoneComplete(milestone)"
-                                            >
-                                                <CheckCircle class="mr-2 h-4 w-4" />
+                                            <DropdownMenuItem class="cursor-pointer"
+                                                @select="toggleMilestoneComplete(milestone)">
+                                                <CheckCircle class="mr-2 size-4" />
                                                 {{ milestone.completed_at ? 'Mark incomplete' : 'Mark complete' }}
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
@@ -208,7 +201,7 @@ function toggleMilestoneComplete(milestone: { id: number; completed_at?: string 
                         </CardHeader>
                         <CardContent class="space-y-4">
                             <div v-if="goal.start_date" class="flex items-center space-x-2">
-                                <Calendar class="h-4 w-4 text-muted-foreground" />
+                                <Calendar class="size-4 text-muted-foreground" />
                                 <div>
                                     <div class="text-sm font-medium">Start Date</div>
                                     <div class="text-sm text-muted-foreground">
@@ -217,7 +210,7 @@ function toggleMilestoneComplete(milestone: { id: number; completed_at?: string 
                                 </div>
                             </div>
                             <div v-if="goal.end_date" class="flex items-center space-x-2">
-                                <Target class="h-4 w-4 text-muted-foreground" />
+                                <Target class="size-4 text-muted-foreground" />
                                 <div>
                                     <div class="text-sm font-medium">Target End Date</div>
                                     <div class="text-sm text-muted-foreground">

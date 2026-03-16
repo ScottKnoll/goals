@@ -70,4 +70,13 @@ class HabitController extends Controller
 
         return redirect()->route('habits.index')->with('success', 'Habit updated!');
     }
+
+    public function destroy(Habit $habit)
+    {
+        abort_unless($habit->user_id === auth()->id(), 404);
+
+        $habit->delete();
+
+        return redirect()->route('habits.index')->with('success', 'Habit deleted successfully!');
+    }
 }

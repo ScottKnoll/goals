@@ -74,13 +74,8 @@ const submit = () => {
                     <form @submit.prevent="submit" class="space-y-6">
                         <div class="space-y-2">
                             <Label for="title">Title</Label>
-                            <Input
-                                id="title"
-                                v-model="form.title"
-                                placeholder="e.g. Complete first draft"
-                                required
-                                autofocus
-                            />
+                            <Input id="title" v-model="form.title" placeholder="e.g. Complete first draft" required
+                                autofocus />
                             <p v-if="form.errors.title" class="text-sm text-red-600">
                                 {{ form.errors.title }}
                             </p>
@@ -96,25 +91,17 @@ const submit = () => {
 
                         <div class="space-y-2">
                             <Label for="notes">Notes</Label>
-                            <textarea
-                                id="notes"
-                                v-model="form.notes"
+                            <textarea id="notes" v-model="form.notes"
                                 class="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                placeholder="Optional notes for this milestone"
-                                rows="4"
-                            />
+                                placeholder="Optional notes for this milestone" rows="4" />
                             <p v-if="form.errors.notes" class="text-sm text-red-600">
                                 {{ form.errors.notes }}
                             </p>
                         </div>
 
                         <div class="flex items-center space-x-2">
-                            <input
-                                id="completed"
-                                v-model="form.completed"
-                                type="checkbox"
-                                class="h-4 w-4 rounded border-input"
-                            />
+                            <input id="completed" v-model="form.completed" type="checkbox"
+                                class="size-4 rounded border-input" />
                             <Label for="completed" class="font-normal">Mark as completed</Label>
                         </div>
 

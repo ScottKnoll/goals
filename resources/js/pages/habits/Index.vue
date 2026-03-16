@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { type BreadcrumbItem } from '@/types'
-import { Link } from '@inertiajs/vue3'
+import { Head, Link } from '@inertiajs/vue3'
 import { valueUpdater } from '@/lib/utils'
 import type {
     ColumnDef,
@@ -23,8 +23,8 @@ import {
     getSortedRowModel,
     useVueTable,
 } from '@tanstack/vue-table'
-import { ArrowUpDown, MoreHorizontal, Edit, Trash2 } from 'lucide-vue-next'
-import { h, ref } from 'vue'
+import { ArrowUpDown, MoreHorizontal, Edit, Trash2, CheckCircle } from 'lucide-vue-next'
+import { h, ref, computed } from 'vue'
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -33,6 +33,11 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+
+interface HabitCompletion {
+    id?: number
+    completed_on: string
+}
 
 interface Habit {
     id: number
@@ -46,11 +51,119 @@ interface Habit {
     current_streak: number
     max_streak: number
     last_completed_at?: string
+    completions?: HabitCompletion[]
 }
 
 const props = defineProps<{
     habits: Habit[]
 }>()
+
+const getCsrfToken = () =>
+    document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? ''
+
+const localHabits = ref<Habit[]>([...props.habits])
+
+const tableData = computed(() => localHabits.value)
+
+const today = () => new Date().toISOString().slice(0, 10)
+
+function isCompletedToday(habit: Habit): boolean {
+    const completions = habit.completions ?? []
+    const todayStr = today()
+    return completions.some((c: HabitCompletion) => {
+        const on = c.completed_on ?? ''
+        return on.slice(0, 10) === todayStr || on === todayStr
+    })
+}
+
+const completingId = ref<number | null>(null)
+
+async function completeHabit(habit: Habit) {
+    if (isCompletedToday(habit)) return
+    completingId.value = habit.id
+    try {
+        const res = await fetch(route('habits.complete', habit.id), {
+            method: 'post',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': getCsrfToken(),
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({}),
+        })
+        const data = (await res.json().catch(() => ({}))) as { habit?: Habit; message?: string }
+        if (!res.ok) {
+            throw new Error(data.message ?? 'Failed to mark habit complete')
+        }
+        if (data.habit) {
+            localHabits.value = localHabits.value.map(h =>
+                h.id === data.habit!.id ? { ...h, ...data.habit } : h
+            )
+        }
+    } catch (err) {
+        alert(err instanceof Error ? err.message : 'Failed to mark habit complete')
+    } finally {
+        completingId.value = null
+    }
+}
+
+async function uncompleteHabit(habit: Habit) {
+    if (!isCompletedToday(habit)) return
+    completingId.value = habit.id
+    try {
+        const res = await fetch(route('habits.uncomplete', habit.id), {
+            method: 'post',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': getCsrfToken(),
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({}),
+        })
+        const data = (await res.json().catch(() => ({}))) as { habit?: Habit }
+        if (!res.ok) throw new Error('Failed to undo completion')
+        if (data.habit) {
+            localHabits.value = localHabits.value.map(h =>
+                h.id === data.habit!.id ? { ...h, ...data.habit } : h
+            )
+        }
+    } catch (err) {
+        alert(err instanceof Error ? err.message : 'Failed to undo completion')
+    } finally {
+        completingId.value = null
+    }
+}
+
+async function deleteHabit(habit: Habit) {
+    if (!confirm('Are you sure you want to delete this habit?')) return
+    const id = habit.id
+    const previous = [...localHabits.value]
+    localHabits.value = localHabits.value.filter(h => h.id !== id)
+    try {
+        const res = await fetch(route('habits.destroy', id), {
+            method: 'delete',
+            redirect: 'manual',
+            headers: {
+                Accept: 'application/json',
+                'X-CSRF-TOKEN': getCsrfToken(),
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            credentials: 'same-origin',
+        })
+        const isRedirect = res.type === 'opaqueredirect' || (res.status >= 300 && res.status < 400)
+        if (!isRedirect && !res.ok) {
+            const data = await res.json().catch(() => ({}))
+            throw new Error((data as { message?: string }).message || 'Failed to delete habit')
+        }
+    } catch (err) {
+        localHabits.value = previous
+        alert(err instanceof Error ? err.message : 'Failed to delete habit')
+    }
+}
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -68,7 +181,7 @@ const columns: ColumnDef<Habit>[] = [
             return h(Button, {
                 variant: 'ghost',
                 onClick: () => column.toggleSorting(column.getIsSorted() === 'asc'),
-            }, () => ['Title', h(ArrowUpDown, { class: 'ml-2 h-4 w-4' })])
+            }, () => ['Title', h(ArrowUpDown, { class: 'ml-2 size-4' })])
         },
         cell: ({ row }) => h('div', { class: 'font-medium pl-4' }, row.getValue('title')),
     },
@@ -115,7 +228,7 @@ const columns: ColumnDef<Habit>[] = [
             return h(Button, {
                 variant: 'ghost',
                 onClick: () => column.toggleSorting(column.getIsSorted() === 'asc'),
-            }, () => ['Current Streak', h(ArrowUpDown, { class: 'ml-2 h-4 w-4' })])
+            }, () => ['Current Streak', h(ArrowUpDown, { class: 'ml-2 size-4' })])
         },
         cell: ({ row }) => {
             const streak = row.getValue('current_streak') as number
@@ -128,11 +241,41 @@ const columns: ColumnDef<Habit>[] = [
             return h(Button, {
                 variant: 'ghost',
                 onClick: () => column.toggleSorting(column.getIsSorted() === 'asc'),
-            }, () => ['Best Streak', h(ArrowUpDown, { class: 'ml-2 h-4 w-4' })])
+            }, () => ['Best Streak', h(ArrowUpDown, { class: 'ml-2 size-4' })])
         },
         cell: ({ row }) => {
             const streak = row.getValue('max_streak') as number
             return h('div', { class: 'text-left font-medium px-4' }, streak)
+        },
+    },
+    {
+        id: 'complete',
+        header: () => 'Complete',
+        cell: ({ row }) => {
+            const habit = row.original
+            const done = isCompletedToday(habit)
+            const loading = completingId.value === habit.id
+            if (done) {
+                return h('div', { class: 'flex items-center gap-2' }, [
+                    h('span', { class: 'inline-flex items-center gap-1.5 text-sm text-green-600' }, [
+                        h(CheckCircle, { class: 'size-4' }),
+                        'Done',
+                    ]),
+                    h(Button, {
+                        variant: 'ghost',
+                        size: 'sm',
+                        class: 'text-muted-foreground hover:text-foreground h-auto py-1 text-xs',
+                        disabled: loading,
+                        onClick: () => uncompleteHabit(habit),
+                    }, () => (loading ? '...' : 'Undo')),
+                ])
+            }
+            return h(Button, {
+                variant: 'outline',
+                size: 'sm',
+                disabled: loading,
+                onClick: () => completeHabit(habit),
+            }, () => (loading ? '...' : 'Mark complete'))
         },
     },
     {
@@ -145,7 +288,7 @@ const columns: ColumnDef<Habit>[] = [
                 h(DropdownMenuTrigger, { asChild: true }, () => [
                     h(Button, { variant: 'ghost', class: 'h-8 w-8 p-0' }, () => [
                         h('span', { class: 'sr-only' }, 'Open menu'),
-                        h(MoreHorizontal, { class: 'h-4 w-4' }),
+                        h(MoreHorizontal, { class: 'size-4' }),
                     ]),
                 ]),
                 h(DropdownMenuContent, { align: 'end' }, () => [
@@ -155,19 +298,15 @@ const columns: ColumnDef<Habit>[] = [
                             window.location.href = `/habits/${habit.id}/edit`
                         },
                     }, () => [
-                        h(Edit, { class: 'mr-2 h-4 w-4' }),
+                        h(Edit, { class: 'mr-2 size-4' }),
                         'Edit',
                     ]),
                     h(DropdownMenuSeparator),
                     h(DropdownMenuItem, {
-                        onClick: () => {
-                            if (confirm('Are you sure you want to delete this habit?')) {
-                                console.log('Delete habit:', habit.id)
-                            }
-                        },
-                        class: 'text-red-600',
+                        onSelect: () => void deleteHabit(habit),
+                        class: '!text-red-600 hover:!text-red-600 focus:!text-red-600 [&_svg]:!text-red-600',
                     }, () => [
-                        h(Trash2, { class: 'mr-2 h-4 w-4' }),
+                        h(Trash2, { class: 'mr-2 size-4' }),
                         'Delete',
                     ]),
                 ]),
@@ -177,7 +316,7 @@ const columns: ColumnDef<Habit>[] = [
 ]
 
 const table = useVueTable({
-    get data() { return props.habits },
+    get data() { return tableData.value },
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),

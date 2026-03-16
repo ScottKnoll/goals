@@ -122,6 +122,9 @@ const searchQuery = ref('')
 
 const getStatus = (goal: Goal) => {
     if (goal.completed_at) return 'completed'
+    const total = goal.milestones_count ?? goal.milestones?.length ?? 0
+    const completed = goal.milestones?.filter((m: any) => m.completed_at)?.length ?? 0
+    if (total > 0 && completed === total) return 'completed'
     if (goal.end_date && new Date(goal.end_date) < new Date()) return 'overdue'
     if (goal.start_date && new Date(goal.start_date) <= new Date()) return 'in-progress'
     return 'planned'
@@ -176,12 +179,9 @@ const columns: ColumnDef<Goal>[] = [
         header: 'Category',
         cell: ({ row }) => {
             const category = row.getValue('category') as string
-            const pill = h('span', {
+            return h('span', {
                 class: 'inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300',
             }, category.charAt(0).toUpperCase() + category.slice(1))
-            return h('div', { class: 'table h-full w-full' }, [
-                h('div', { class: 'table-cell align-middle text-center' }, [pill]),
-            ])
         },
     },
     {
@@ -197,14 +197,11 @@ const columns: ColumnDef<Goal>[] = [
             const status = getStatus(goal)
             const statusDisplay = getStatusDisplay(status)
             const StatusIcon = statusDisplay.icon
-            const pill = h('span', {
+            return h('span', {
                 class: `inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${statusDisplay.class}`,
             }, [
                 h(StatusIcon, { class: 'size-3.5 shrink-0' }),
                 h('span', {}, statusDisplay.text),
-            ])
-            return h('div', { class: 'table h-full w-full' }, [
-                h('div', { class: 'table-cell align-middle text-center' }, [pill]),
             ])
         },
     },
@@ -221,14 +218,11 @@ const columns: ColumnDef<Goal>[] = [
             const priority = getPriority(goal)
             const priorityDisplay = getPriorityDisplay(priority)
             const PriorityIcon = priorityDisplay.icon
-            const pill = h('span', {
+            return h('span', {
                 class: `inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${priorityDisplay.class}`,
             }, [
                 h(PriorityIcon, { class: 'size-3.5 shrink-0' }),
                 h('span', {}, priorityDisplay.text),
-            ])
-            return h('div', { class: 'table h-full w-full' }, [
-                h('div', { class: 'table-cell align-middle text-center' }, [pill]),
             ])
         },
     },
@@ -241,17 +235,14 @@ const columns: ColumnDef<Goal>[] = [
             const completedMilestones = goal.milestones?.filter((m: any) => m.completed_at)?.length || 0
             const progress = milestonesCount > 0 ? Math.round((completedMilestones / milestonesCount) * 100) : 0
 
-            const content = h('div', { class: 'flex items-center space-x-2' }, [
-                h('div', { class: 'w-full bg-gray-200 rounded-full h-2' }, [
+            return h('div', { class: 'flex w-full min-w-0 items-center gap-2' }, [
+                h('div', { class: 'min-w-12 flex-1 bg-gray-200 rounded-full h-2 overflow-hidden' }, [
                     h('div', {
-                        class: 'bg-blue-600 h-2 rounded-full',
-                        style: `width: ${progress}%`
+                        class: 'h-2 rounded-full bg-blue-600 transition-[width]',
+                        style: { width: `${progress}%` }
                     })
                 ]),
-                h('span', { class: 'text-sm text-gray-600 min-w-[3rem]' }, `${progress}%`)
-            ])
-            return h('div', { class: 'table h-full w-full' }, [
-                h('div', { class: 'table-cell align-middle' }, [content]),
+                h('span', { class: 'shrink-0 text-sm text-muted-foreground tabular-nums' }, `${progress}%`)
             ])
         },
     },
@@ -283,7 +274,7 @@ const columns: ColumnDef<Goal>[] = [
                         onSelect: () => void deleteGoal(goal),
                         class: 'text-red-600',
                     }, () => [
-                        h(Trash2, { class: 'mr-2 h-4 w-4' }),
+                        h(Trash2, { class: 'mr-2 size-4 text-red-600' }),
                         'Delete',
                     ]),
                 ]),
@@ -322,8 +313,8 @@ const table = useVueTable({
                 </div>
                 <Button as-child>
                     <Link :href="route('goals.create')">
-                    <Plus class="mr-2 size-4" />
-                    Add Goal
+                        <Plus class="mr-2 size-4" />
+                        Add Goal
                     </Link>
                 </Button>
             </div>
@@ -348,7 +339,7 @@ const table = useVueTable({
             </div>
 
             <div class="rounded-md border">
-                <Table class="[&_tbody_td]:h-14">
+                <Table>
                     <TableHeader>
                         <TableRow v-for="headerGroup in table.getHeaderGroups()" :key="headerGroup.id">
                             <TableHead v-for="header in headerGroup.headers" :key="header.id">
