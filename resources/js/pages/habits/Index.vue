@@ -68,9 +68,13 @@ const tableData = computed(() => localHabits.value)
 const today = () => new Date().toISOString().slice(0, 10)
 
 function isCompletedToday(habit: Habit): boolean {
+    return getTodayCompletion(habit) !== undefined
+}
+
+function getTodayCompletion(habit: Habit): HabitCompletion | undefined {
     const completions = habit.completions ?? []
     const todayStr = today()
-    return completions.some((c: HabitCompletion) => {
+    return completions.find((c: HabitCompletion) => {
         const on = c.completed_on ?? ''
         return on.slice(0, 10) === todayStr || on === todayStr
     })
@@ -82,7 +86,7 @@ async function completeHabit(habit: Habit) {
     if (isCompletedToday(habit)) return
     completingId.value = habit.id
     try {
-        const res = await fetch(route('habits.complete', habit.id), {
+        const res = await fetch(route('habits.completions.store', habit.id), {
             method: 'post',
             headers: {
                 Accept: 'application/json',
@@ -110,19 +114,18 @@ async function completeHabit(habit: Habit) {
 }
 
 async function uncompleteHabit(habit: Habit) {
-    if (!isCompletedToday(habit)) return
+    const completion = getTodayCompletion(habit)
+    if (!completion?.id) return
     completingId.value = habit.id
     try {
-        const res = await fetch(route('habits.uncomplete', habit.id), {
-            method: 'post',
+        const res = await fetch(route('habits.completions.destroy', [habit.id, completion.id]), {
+            method: 'delete',
             headers: {
                 Accept: 'application/json',
-                'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': getCsrfToken(),
                 'X-Requested-With': 'XMLHttpRequest',
             },
             credentials: 'same-origin',
-            body: JSON.stringify({}),
         })
         const data = (await res.json().catch(() => ({}))) as { habit?: Habit }
         if (!res.ok) throw new Error('Failed to undo completion')

@@ -11,6 +11,13 @@ class HabitCompletion extends Model
         'completed_on',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'completed_on' => 'date',
+        ];
+    }
+
     public function habit()
     {
         return $this->belongsTo(Habit::class);

@@ -4,10 +4,9 @@ use App\Http\Controllers\GoalController;
 use App\Http\Controllers\GoalMilestoneController;
 use App\Http\Controllers\HabitCompletionController;
 use App\Http\Controllers\HabitController;
-use App\Http\Controllers\HabitUncompleteController;
 use App\Http\Controllers\TaskController;
-use Inertia\Inertia;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 Route::get('/', function () {
     return Inertia::render('Welcome');
@@ -19,13 +18,12 @@ Route::get('dashboard', function () {
 
 Route::middleware(['auth'])->group(function () {
     Route::resource('habits', HabitController::class);
-    Route::post('habits/{habit}/complete', HabitCompletionController::class)->name('habits.complete');
-    Route::post('habits/{habit}/uncomplete', HabitUncompleteController::class)->name('habits.uncomplete');
+    Route::resource('habits.completions', HabitCompletionController::class)->only(['store', 'destroy'])->scoped();
     Route::resource('tasks', TaskController::class);
     Route::resource('goals', GoalController::class);
     Route::resource('goals.milestones', GoalMilestoneController::class)->except('index', 'show');
     Route::resource('milestones.tasks', TaskController::class)->except(['index', 'show']);
 });
 
-require __DIR__ . '/settings.php';
-require __DIR__ . '/auth.php';
+require __DIR__.'/settings.php';
+require __DIR__.'/auth.php';

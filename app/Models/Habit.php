@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Habit extends Model
 {
@@ -40,11 +39,15 @@ class Habit extends Model
 
     public function incrementStreak()
     {
-        if ($this->last_completed_at && $this->last_completed_at->isBefore(now()->subDay())) {
+        $lastDate = $this->last_completed_at?->toDateString();
+        $today = now()->toDateString();
+        $yesterday = now()->subDay()->toDateString();
+
+        if ($lastDate !== null && $lastDate !== $today && $lastDate !== $yesterday) {
             $this->current_streak = 0;
-        } else {
-            $this->current_streak += 1;
         }
+
+        $this->current_streak = ($this->current_streak ?? 0) + 1;
 
         if ($this->current_streak > $this->max_streak) {
             $this->max_streak = $this->current_streak;
